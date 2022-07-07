@@ -17,7 +17,7 @@ to hide chat messages, trade requests, and even the player itself from your game
 
 The result is an experience comparable to a player moderator reporting and muting a player in-game!
 
-## Why is this better than normal reports and mutes? What problem does this really solve?
+## Why is this better than normal reports / mutes? What problem does this solve?
 
 It isn't. Instead, you should look at it as an addition; a second line of defense.
 
