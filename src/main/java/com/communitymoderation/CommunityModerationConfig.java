@@ -17,8 +17,8 @@ public interface CommunityModerationConfig extends Config
 
 	@ConfigItem(
 		keyName = "showMutedFriendMessages",
-		name = "Allow muted friends",
-		description = "Ignores community-mutes for players on your friends list.",
+		name = "Show muted friends",
+		description = "Disables community-mutes for players on your friends list.",
 		position = 1,
 		section = overrideMutes
 	)
@@ -29,8 +29,8 @@ public interface CommunityModerationConfig extends Config
 
 	@ConfigItem(
 		keyName = "showMutedClanMemberMessages",
-		name = "Allow muted clan members",
-		description = "Ignores community-mutes for members of your clan chat.",
+		name = "Show muted clan members",
+		description = "Disables community-mutes for members of your clan chat.",
 		position = 2,
 		section = overrideMutes
 	)
@@ -41,8 +41,8 @@ public interface CommunityModerationConfig extends Config
 
 	@ConfigItem(
 		keyName = "allowedPlayers",
-		name = "Manually allowed players",
-		description = "Allows you to manually ignore community-mutes. (comma-separated, case insensitive)",
+		name = "Additional Players",
+		description = "Disable community-mutes for the given players. (comma-separated, case insensitive)",
 		position = 3,
 		section = overrideMutes
 	)
@@ -53,8 +53,8 @@ public interface CommunityModerationConfig extends Config
 
 	@ConfigItem(
 		keyName = "showMutedPlayers",
-		name = "Show community-muted players",
-		description = "Disables the muting aspect of the plugin, while keeping the reporting enabled. Intended for Player Moderators (PMods) who take their job seriously.",
+		name = "Show all muted players",
+		description = "Disables the muting aspect of the plugin, while keeping the reporting enabled (Useful for Player Moderators / PMods).",
 		position = 4,
 		section = overrideMutes
 	)

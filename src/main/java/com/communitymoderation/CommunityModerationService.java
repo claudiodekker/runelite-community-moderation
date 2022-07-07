@@ -56,7 +56,7 @@ public class CommunityModerationService
 	}
 
 
-	private String getMachineUUID()
+	protected String getMachineUUID()
 	{
 		long accountHash = client.getAccountHash();
 
@@ -101,7 +101,7 @@ public class CommunityModerationService
 		}
 	}
 
-	private Feed fetchFeed()
+	protected Feed fetchFeed()
 	{
 		final HttpUrl url = BASE_URL.newBuilder().addPathSegment("feed").build();
 

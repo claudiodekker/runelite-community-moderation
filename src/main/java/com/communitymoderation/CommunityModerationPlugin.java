@@ -72,7 +72,7 @@ public class CommunityModerationPlugin extends Plugin
 	private String reportedPlayer;
 
 	@Provides
-	CommunityModerationConfig provideConfig(ConfigManager configManager)
+	protected CommunityModerationConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(CommunityModerationConfig.class);
 	}
@@ -93,7 +93,7 @@ public class CommunityModerationPlugin extends Plugin
 		log.info("Community Mod Plugin stopped!");
 	}
 
-	boolean isUnmutedPlayer(String rawPlayerName)
+	public boolean isUnmutedPlayer(String rawPlayerName)
 	{
 		if (config.showMutedPlayers())
 		{
@@ -126,7 +126,7 @@ public class CommunityModerationPlugin extends Plugin
 		return this.service.getFeed().players.stream().noneMatch(name -> Text.standardize(name).equals(playerName));
 	}
 
-	private boolean isClanChatMember(String name)
+	protected boolean isClanChatMember(String name)
 	{
 		ClanChannel clanChannel = client.getClanChannel();
 		if (clanChannel != null && clanChannel.findMember(name) != null)
@@ -139,7 +139,7 @@ public class CommunityModerationPlugin extends Plugin
 		return clanChannel != null && clanChannel.findMember(name) != null;
 	}
 
-	private boolean isFriendsChatMember(String name)
+	protected boolean isFriendsChatMember(String name)
 	{
 		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
 
@@ -147,7 +147,7 @@ public class CommunityModerationPlugin extends Plugin
 	}
 
 	@Subscribe(priority = -2)
-	public void onOverheadTextChanged(OverheadTextChanged event)
+	protected void onOverheadTextChanged(OverheadTextChanged event)
 	{
 		if (!(event.getActor() instanceof Player) || isUnmutedPlayer(event.getActor().getName()))
 		{
@@ -158,7 +158,7 @@ public class CommunityModerationPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
+	protected void onConfigChanged(ConfigChanged event)
 	{
 		if (!"communitymod".equals(event.getGroup()))
 		{
@@ -169,7 +169,7 @@ public class CommunityModerationPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	protected void onChatMessage(ChatMessage event)
 	{
 		ChatMessageType chatMessageType = event.getType();
 		if (!supportedChatTypes.contains(chatMessageType))
@@ -193,7 +193,7 @@ public class CommunityModerationPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
+	protected void onScriptCallbackEvent(ScriptCallbackEvent event)
 	{
 		if (!"chatFilterCheck".equals(event.getEventName()))
 		{
@@ -218,7 +218,7 @@ public class CommunityModerationPlugin extends Plugin
 		intStack[intStackSize - 3] = 0;
 	}
 
-	boolean shouldDraw(Renderable renderable, boolean drawingUI)
+	protected boolean shouldDraw(Renderable renderable, boolean drawingUI)
 	{
 		if (!config.hideMutedPlayers())
 		{
@@ -234,7 +234,7 @@ public class CommunityModerationPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onVarClientStrChanged(VarClientStrChanged event)
+	protected void onVarClientStrChanged(VarClientStrChanged event)
 	{
 		if (event.getIndex() != 370)
 		{
@@ -251,7 +251,7 @@ public class CommunityModerationPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onScriptPreFired(ScriptPreFired event)
+	protected void onScriptPreFired(ScriptPreFired event)
 	{
 		if (event.getScriptId() != 1123)
 		{
@@ -291,7 +291,7 @@ public class CommunityModerationPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
+	protected void onWidgetLoaded(WidgetLoaded event)
 	{
 		if (event.getGroupId() == 553)
 		{
