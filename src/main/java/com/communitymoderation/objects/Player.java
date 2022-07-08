@@ -7,16 +7,10 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.FriendsChatManager;
-import net.runelite.api.MessageNode;
 import net.runelite.api.clan.ClanChannel;
 import net.runelite.client.util.Text;
 
@@ -58,28 +52,6 @@ public class Player
 		{
 			throw new RuntimeException(e);
 		}
-	}
-
-	public List<String> getRecentMessages()
-	{
-		HashMap<Integer, MessageNode> allPlayerMessages = new HashMap<>();
-		client.getChatLineMap().values().forEach(buffer -> {
-			if (buffer == null)
-			{
-				return;
-			}
-
-			Arrays.stream(buffer.getLines().clone())
-				.filter(Objects::nonNull)
-				.filter(chatLine -> Text.standardize(chatLine.getName()).equals(this.name))
-				.forEach(node -> allPlayerMessages.put(node.getId(), node));
-		});
-
-		return allPlayerMessages.values().stream()
-			.sorted((m1, m2) -> m2.getTimestamp() - m1.getTimestamp())
-			.limit(5)
-			.map(messageNode -> messageNode.getTimestamp() + "| " + messageNode.getValue())
-			.collect(Collectors.toList());
 	}
 
 	public boolean is(Player player)
@@ -126,9 +98,6 @@ public class Player
 
 	public void report()
 	{
-		this.service.submitReport(new Report(
-			this.getName(),
-			this.getRecentMessages()
-		));
+		this.service.submitReport(new Report(this.getName()));
 	}
 }
