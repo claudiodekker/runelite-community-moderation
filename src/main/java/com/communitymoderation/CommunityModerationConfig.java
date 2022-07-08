@@ -73,7 +73,7 @@ public interface CommunityModerationConfig extends Config
 	@ConfigItem(
 		keyName = "hideMutedPlayers",
 		name = "Hide muted players",
-		description = "Configures whether or not community-muted players are hidden.",
+		description = "Hides community-muted players from your game entirely.",
 		position = 6,
 		section = entityHider
 	)

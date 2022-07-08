@@ -94,6 +94,7 @@ public class ReportButtonInterface
 	public boolean isHidden()
 	{
 		Widget widget = client.getWidget(553, 1);
+
 		return widget == null || widget.isHidden();
 	}
 }

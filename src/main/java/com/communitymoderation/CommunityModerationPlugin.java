@@ -1,13 +1,10 @@
 package com.communitymoderation;
 
-import com.communitymoderation.objects.Report;
+import com.communitymoderation.objects.Player;
 import com.communitymoderation.ui.ReportButtonInterface;
 import com.google.inject.Provides;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -15,12 +12,9 @@ import net.runelite.api.ChatLineBuffer;
 import net.runelite.api.ChatMessageType;
 import static net.runelite.api.ChatMessageType.*;
 import net.runelite.api.Client;
-import net.runelite.api.FriendsChatManager;
 import net.runelite.api.MessageNode;
-import net.runelite.api.Player;
 import net.runelite.api.Renderable;
 import net.runelite.api.ScriptID;
-import net.runelite.api.clan.ClanChannel;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.OverheadTextChanged;
 import net.runelite.api.events.ScriptCallbackEvent;
@@ -54,6 +48,7 @@ public class CommunityModerationPlugin extends Plugin
 		CHALREQ_FRIENDSCHAT,
 		CLAN_GIM_CHAT
 	);
+
 	@Inject
 	private Client client;
 	@Inject
@@ -66,10 +61,15 @@ public class CommunityModerationPlugin extends Plugin
 	private ReportButtonInterface reportButtonInterface;
 	@Inject
 	private CommunityModerationService service;
+	@Inject
+	private PlayerManager players;
+
 	private final Hooks.RenderableDrawListener drawListener = this::shouldDraw;
 	@Setter
 	private Boolean sendCommunityReport;
-	private String reportedPlayer;
+	private String offendingPlayerName;
+
+	private Player localPlayer;
 
 	@Provides
 	protected CommunityModerationConfig provideConfig(ConfigManager configManager)
@@ -80,6 +80,7 @@ public class CommunityModerationPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+		players.setInjector(injector);
 		hooks.registerRenderableDrawListener(drawListener);
 		clientThread.invokeLater(reportButtonInterface::init);
 		log.info("Community Mod Plugin started!");
@@ -93,79 +94,58 @@ public class CommunityModerationPlugin extends Plugin
 		log.info("Community Mod Plugin stopped!");
 	}
 
-	public boolean isUnmutedPlayer(String rawPlayerName)
+	public boolean isUnmutedPlayer(String playerName)
 	{
-		if (config.showMutedPlayers())
+		net.runelite.api.Player localPlayer = client.getLocalPlayer();
+		if (config.showMutedPlayers() || localPlayer == null)
 		{
 			return true;
 		}
 
-		final String playerName = Text.standardize(rawPlayerName);
-		final Player localPlayer = client.getLocalPlayer();
-
-		if (localPlayer != null && Text.standardize(localPlayer.getName()).equals(playerName))
+		final Player player = players.find(playerName);
+		if (player.is(players.find(localPlayer.getName())))
 		{
 			return true;
 		}
 
-		if (config.showMutedFriendMessages() && client.isFriended(playerName, false))
+		if (!player.isMuted())
 		{
 			return true;
 		}
 
-		if (config.showMutedClanMemberMessages() && (isFriendsChatMember(playerName) || isClanChatMember(playerName)))
+		if (player.isManuallyWhitelisted())
 		{
 			return true;
 		}
 
-		if (Text.fromCSV(config.allowedPlayers()).stream().anyMatch(name -> Text.standardize(name).equals(playerName)))
+		if (config.showMutedFriendMessages() && player.isFriend())
 		{
 			return true;
 		}
 
-		return this.service.getFeed().players.stream().noneMatch(name -> Text.standardize(name).equals(playerName));
+		if (config.showMutedClanMemberMessages() && (player.isFriendsChatMember() || player.isClanChatMember()))
+		{
+			return true;
+		}
+
+		return false;
 	}
 
-	protected boolean isClanChatMember(String name)
+	protected boolean shouldDraw(Renderable renderable, boolean drawingUI)
 	{
-		ClanChannel clanChannel = client.getClanChannel();
-		if (clanChannel != null && clanChannel.findMember(name) != null)
+		if (!config.hideMutedPlayers())
 		{
 			return true;
 		}
 
-		clanChannel = client.getGuestClanChannel();
-
-		return clanChannel != null && clanChannel.findMember(name) != null;
-	}
-
-	protected boolean isFriendsChatMember(String name)
-	{
-		FriendsChatManager friendsChatManager = client.getFriendsChatManager();
-
-		return friendsChatManager != null && friendsChatManager.findByName(name) != null;
-	}
-
-	@Subscribe(priority = -2)
-	protected void onOverheadTextChanged(OverheadTextChanged event)
-	{
-		if (!(event.getActor() instanceof Player) || isUnmutedPlayer(event.getActor().getName()))
+		if (!(renderable instanceof net.runelite.api.Player))
 		{
-			return;
+			return true;
 		}
 
-		event.getActor().setOverheadText("");
-	}
-
-	@Subscribe
-	protected void onConfigChanged(ConfigChanged event)
-	{
-		if (!"communitymod".equals(event.getGroup()))
-		{
-			return;
-		}
-
-		client.refreshChat();
+		return isUnmutedPlayer(
+			((net.runelite.api.Player) renderable).getName()
+		);
 	}
 
 	@Subscribe
@@ -190,6 +170,31 @@ public class CommunityModerationPlugin extends Plugin
 
 		lineBuffer.removeMessageNode(event.getMessageNode());
 		clientThread.invokeLater(() -> client.runScript(ScriptID.SPLITPM_CHANGED));
+	}
+
+	@Subscribe
+	protected void onConfigChanged(ConfigChanged event)
+	{
+		if ("community-moderation".equals(event.getGroup()))
+		{
+			client.refreshChat();
+		}
+	}
+
+	@Subscribe(priority = -2)
+	protected void onOverheadTextChanged(OverheadTextChanged event)
+	{
+		if (!(event.getActor() instanceof net.runelite.api.Player))
+		{
+			return;
+		}
+
+		if (isUnmutedPlayer(event.getActor().getName()))
+		{
+			return;
+		}
+
+		event.getActor().setOverheadText("");
 	}
 
 	@Subscribe
@@ -218,24 +223,29 @@ public class CommunityModerationPlugin extends Plugin
 		intStack[intStackSize - 3] = 0;
 	}
 
-	protected boolean shouldDraw(Renderable renderable, boolean drawingUI)
+	@Subscribe
+	protected void onScriptPreFired(ScriptPreFired event)
 	{
-		if (!config.hideMutedPlayers())
+		// 1123 = Script that gets called when a player clicks on a Report offense reason.
+		if (event.getScriptId() != 1123)
 		{
-			return true;
+			return;
 		}
 
-		if (!(renderable instanceof Player))
+		if (!this.sendCommunityReport)
 		{
-			return true;
+			offendingPlayerName = null;
+			return;
 		}
 
-		return isUnmutedPlayer(((Player) renderable).getName());
+		players.find(offendingPlayerName).report();
+		offendingPlayerName = null;
 	}
 
 	@Subscribe
 	protected void onVarClientStrChanged(VarClientStrChanged event)
 	{
+		// VarClientStr 370 is the "Offending Player" field in the Report interface.
 		if (event.getIndex() != 370)
 		{
 			return;
@@ -244,55 +254,19 @@ public class CommunityModerationPlugin extends Plugin
 		String offendingPlayerName = Text.standardize(client.getVarcStrValue(370));
 		if (offendingPlayerName.isEmpty())
 		{
+			// We don't want to clear the offending player name when it's empty, as this also
+			// happens automatically when the report is submitted, preventing us from using
+			// the name in our own reports. Instead, we'll just clear it ourselves later.
 			return;
 		}
 
-		reportedPlayer = offendingPlayerName;
-	}
-
-	@Subscribe
-	protected void onScriptPreFired(ScriptPreFired event)
-	{
-		if (event.getScriptId() != 1123)
-		{
-			return;
-		}
-
-		if (!this.sendCommunityReport)
-		{
-			reportedPlayer = null;
-			return;
-		}
-
-		HashMap<Integer, MessageNode> allPlayerMessages = new HashMap<>();
-		client.getChatLineMap().values().forEach(buffer -> {
-			if (buffer == null)
-			{
-				return;
-			}
-
-			Arrays.stream(buffer.getLines().clone())
-				.filter(Objects::nonNull)
-				.filter(chatLine -> Text.standardize(chatLine.getName()).equals(reportedPlayer))
-				.forEach(node -> allPlayerMessages.put(node.getId(), node));
-		});
-
-		List<String> mostRecentPlayerMessages = allPlayerMessages.values().stream()
-			.sorted((m1, m2) -> m2.getTimestamp() - m1.getTimestamp())
-			.limit(5)
-			.map(messageNode -> messageNode.getTimestamp() + "| " + messageNode.getValue())
-			.collect(Collectors.toList());
-
-		this.service.submitReport(new Report(
-			reportedPlayer,
-			mostRecentPlayerMessages
-		));
-		reportedPlayer = null;
+		this.offendingPlayerName = offendingPlayerName;
 	}
 
 	@Subscribe
 	protected void onWidgetLoaded(WidgetLoaded event)
 	{
+		// Widget Group 553 = Report Dialog
 		if (event.getGroupId() == 553)
 		{
 			sendCommunityReport = true;

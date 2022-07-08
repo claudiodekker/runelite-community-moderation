@@ -6,21 +6,21 @@ import java.util.List;
 
 public class Feed
 {
-	public int apiVersion;
-	public Instant expiresAt;
-	public List<String> players;
+	public final int apiVersion;
+	public final Instant expiresAt;
+	public final List<String> hashes;
 
 	public Feed()
 	{
 		this.apiVersion = -1;
 		this.expiresAt = Instant.now().plusSeconds(120);
-		this.players = new ArrayList<>();
+		this.hashes = new ArrayList<>();
 	}
 
 	public Feed(int apiVersion, Instant expiresAt, ArrayList<String> players)
 	{
 		this.apiVersion = apiVersion;
 		this.expiresAt = expiresAt;
-		this.players = players;
+		this.hashes = players;
 	}
 }
