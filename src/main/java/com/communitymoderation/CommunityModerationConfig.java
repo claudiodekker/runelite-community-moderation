@@ -53,8 +53,8 @@ public interface CommunityModerationConfig extends Config
 
 	@ConfigItem(
 		keyName = "showMutedPlayers",
-		name = "Show all muted players",
-		description = "Disables the muting aspect of the plugin, while keeping the reporting enabled (Useful for Player Moderators / PMods).",
+		name = "Reporting-only mode",
+		description = "Disables the muting aspect of the plugin, while still forwarding abuse reports (Useful for Player Moderators / PMods).",
 		position = 4,
 		section = overrideMutes
 	)

@@ -55,7 +55,6 @@ public class CommunityModerationService
 			.build();
 	}
 
-
 	protected String getMachineUUID()
 	{
 		long accountHash = client.getAccountHash();
