@@ -1,12 +1,10 @@
 package com.communitymoderation;
 
 import com.communitymoderation.objects.Player;
-import com.communitymoderation.ui.ReportButtonInterface;
 import com.google.inject.Provides;
 import java.util.Arrays;
 import java.util.List;
 import javax.inject.Inject;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatLineBuffer;
 import net.runelite.api.ChatMessageType;
@@ -22,7 +20,6 @@ import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.events.ScriptPreFired;
 import net.runelite.api.events.VarClientStrChanged;
 import net.runelite.api.events.VarbitChanged;
-import net.runelite.api.events.WidgetLoaded;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.Hooks;
 import net.runelite.client.config.ConfigManager;
@@ -60,18 +57,9 @@ public class CommunityModerationPlugin extends Plugin
 	@Inject
 	private CommunityModerationConfig config;
 	@Inject
-	private ReportButtonInterface reportButtonInterface;
-	@Inject
-	private CommunityModerationService service;
-	@Inject
 	private PlayerManager players;
-
 	private final Hooks.RenderableDrawListener drawListener = this::shouldDraw;
-	@Setter
-	private Boolean sendCommunityReport;
 	private String offendingPlayerName;
-
-	private Player localPlayer;
 	private Boolean inPvp = false;
 
 	@Provides
@@ -85,7 +73,6 @@ public class CommunityModerationPlugin extends Plugin
 	{
 		players.setInjector(injector);
 		hooks.registerRenderableDrawListener(drawListener);
-		clientThread.invokeLater(reportButtonInterface::init);
 		clientThread.invokeLater(this::updatePvpState);
 		log.info("Community Mod Plugin started!");
 	}
@@ -94,7 +81,6 @@ public class CommunityModerationPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		hooks.unregisterRenderableDrawListener(drawListener);
-		clientThread.invokeLater(reportButtonInterface::destroy);
 		log.info("Community Mod Plugin stopped!");
 	}
 
@@ -246,12 +232,6 @@ public class CommunityModerationPlugin extends Plugin
 			return;
 		}
 
-		if (!this.sendCommunityReport)
-		{
-			offendingPlayerName = null;
-			return;
-		}
-
 		players.find(offendingPlayerName).report();
 		offendingPlayerName = null;
 	}
@@ -281,16 +261,5 @@ public class CommunityModerationPlugin extends Plugin
 		}
 
 		this.offendingPlayerName = offendingPlayerName;
-	}
-
-	@Subscribe
-	protected void onWidgetLoaded(WidgetLoaded event)
-	{
-		// Widget Group 553 = Report Dialog
-		if (event.getGroupId() == 553)
-		{
-			sendCommunityReport = true;
-			reportButtonInterface.init();
-		}
 	}
 }
