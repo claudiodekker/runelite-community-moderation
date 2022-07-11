@@ -15,11 +15,13 @@ import net.runelite.api.Client;
 import net.runelite.api.MessageNode;
 import net.runelite.api.Renderable;
 import net.runelite.api.ScriptID;
+import net.runelite.api.Varbits;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.OverheadTextChanged;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.events.ScriptPreFired;
 import net.runelite.api.events.VarClientStrChanged;
+import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.Hooks;
@@ -70,6 +72,7 @@ public class CommunityModerationPlugin extends Plugin
 	private String offendingPlayerName;
 
 	private Player localPlayer;
+	private Boolean inPvp = false;
 
 	@Provides
 	protected CommunityModerationConfig provideConfig(ConfigManager configManager)
@@ -83,6 +86,7 @@ public class CommunityModerationPlugin extends Plugin
 		players.setInjector(injector);
 		hooks.registerRenderableDrawListener(drawListener);
 		clientThread.invokeLater(reportButtonInterface::init);
+		clientThread.invokeLater(this::updatePvpState);
 		log.info("Community Mod Plugin started!");
 	}
 
@@ -92,6 +96,11 @@ public class CommunityModerationPlugin extends Plugin
 		hooks.unregisterRenderableDrawListener(drawListener);
 		clientThread.invokeLater(reportButtonInterface::destroy);
 		log.info("Community Mod Plugin stopped!");
+	}
+
+	protected void updatePvpState()
+	{
+		this.inPvp = client.getVarbitValue(Varbits.PVP_SPEC_ORB) == 1;
 	}
 
 	public boolean isUnmutedPlayer(String playerName)
@@ -104,6 +113,11 @@ public class CommunityModerationPlugin extends Plugin
 
 		final Player player = players.find(playerName);
 		if (player.is(players.find(localPlayer.getName())))
+		{
+			return true;
+		}
+
+		if (this.inPvp)
 		{
 			return true;
 		}
@@ -240,6 +254,12 @@ public class CommunityModerationPlugin extends Plugin
 
 		players.find(offendingPlayerName).report();
 		offendingPlayerName = null;
+	}
+
+	@Subscribe
+	protected void onVarbitChanged(VarbitChanged event)
+	{
+		updatePvpState();
 	}
 
 	@Subscribe
